@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { genderEnum, IUser, otpTypesEnum, providerEnum, roleEnum } from "../../common";
+import { encrypt, generateHash } from "../../utils";
 
 
 
@@ -41,8 +42,14 @@ const userSchema = new mongoose.Schema<IUser>({
         default: genderEnum.MALE
     },
     DOB: Date,
-    profilePicture: String,
-    coverPicture: String,
+    profilePicture: {
+        secure_url: String,
+        public_id: String
+    },
+    coverPicture: {
+        url: String,
+        public_id: String
+    },
     provider: {
         type: String,
         required: true,
@@ -63,5 +70,15 @@ const userSchema = new mongoose.Schema<IUser>({
 
 }, { timestamps: true })
 
+userSchema.pre('save', function () {
+
+    if (this.isModified("password")) {
+        this.password = generateHash(this.password as string)
+    }
+    if (this.isModified("phoneNumber")) {
+        this.phoneNumber = encrypt(this.phoneNumber as string)
+    }
+
+})
 const userModel = mongoose.model<IUser>('User', userSchema)
 export { userModel }

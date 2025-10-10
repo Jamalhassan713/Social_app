@@ -1,10 +1,11 @@
 import { Router } from "express";
 import authService from "../services/auth.service";
-import { authentication } from "../../../middlewares";
+import { authentication, validationMiddleware } from "../../../middlewares";
+import { signUpValidator } from "../../../validators";
 const authController = Router();
 
 //signup
-authController.post('/signUp', authService.signUp);
+authController.post('/signUp', validationMiddleware(signUpValidator), authService.signUp);
 
 //confirm email
 authController.post('/confirm', authService.confirmEmail)

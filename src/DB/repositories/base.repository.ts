@@ -1,4 +1,4 @@
-import mongoose, { FilterQuery, Model, ProjectionType, QueryOptions } from "mongoose";
+import mongoose, { FilterQuery, Model, ProjectionType, QueryOptions, UpdateQuery } from "mongoose";
 
 
 export abstract class baseRepository<T> {
@@ -13,11 +13,18 @@ export abstract class baseRepository<T> {
     async findDocumentById(id: mongoose.Schema.Types.ObjectId, projection?: ProjectionType<T>, options?: QueryOptions<T>): Promise<T | null> {
         return await this.model.findById(id, projection, options)
     }
-    updateOneDocument() { }
+    async findDocumentByIdAndUpdate(id: mongoose.Schema.Types.ObjectId, updatedObject: UpdateQuery<T>, options?: QueryOptions<T>): Promise<T | null> {
+        return await this.model.findById(id, updatedObject, options)
+    }
+    async updateOneDocument(filters: FilterQuery<T>, updatedObject: UpdateQuery<T>, options?: QueryOptions<T>) {
+        return await this.model.findOneAndUpdate(filters, updatedObject, options)
+    }
     updateMultipleDocument() { }
     findAndUpdateDocument() { }
     deleteOneDocument() { }
     deleteMultipleDocument() { }
     findAndDeleteDocument() { }
-    findDocuments() { }
+    async findDocuments(filters: FilterQuery<T> = {}, projection?: ProjectionType<T>, options?: QueryOptions<T>): Promise<T[]> {
+        return await this.model.find(filters, projection, options)
+    }
 }

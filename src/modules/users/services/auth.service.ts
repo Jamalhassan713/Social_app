@@ -1,8 +1,8 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
-import { IRequest, IUser, otpTypesEnum } from "../../../common";
+import { IRequest, IUser, otpTypesEnum, signUpBodyType } from "../../../common";
 import { blackListedTokenRepository, blackListedTokensModel, userModel, userRepository } from "../../../DB";
-import { compareHash, emitter, encrypt, generateHash, generateToken } from "../../../utils";
+import { badRequestException, compareHash, conflictException, emitter, encrypt, generateHash, generateToken, successResponse } from "../../../utils";
 import { SignOptions } from "jsonwebtoken";
 
 
@@ -15,13 +15,11 @@ class authService {
         const {
             firstName, lastName,
             email, password, age, gender, DOB,
-            phoneNumber }: Partial<IUser> = req.body;
+            phoneNumber }: signUpBodyType = req.body;
 
         const isEmailExist = await this.userRepo.findOneDocument({ email }, 'email')
-        if (isEmailExist) return res.status(409).json({ message: 'Email already exist', data: { invalidEmail: email } })
+        if (isEmailExist) throw new conflictException('Email already exist', { invalidEmail: email })
 
-        const encryptedPhoneNumber = encrypt(phoneNumber as string)
-        const hashedPassword = generateHash(password as string)
 
         const otp = Math.floor(Math.random() * 100000).toString();
         emitter.emit('sendEmail', {
@@ -35,43 +33,43 @@ class authService {
             otpType: otpTypesEnum.CONFIRMATION
         }
         const newUser = await this.userRepo.createNewDocument(
-            { firstName, lastName, email, password: hashedPassword, age, gender, DOB, phoneNumber: encryptedPhoneNumber, OTPS: [confirmationOtp] }
+            { firstName, lastName, email, password, age, gender, DOB, phoneNumber, OTPS: [confirmationOtp] }
         )
-        return res.status(201).json({ message: 'User created successfully', data: { newUser } })
+        res.json(successResponse<IUser>('User created successfully', 201, newUser))
     }
     confirmEmail = async (req: Request, res: Response) => {
         const { email, otp } = req.body;
         const user: IUser | null = await this.userRepo.findOneDocument({ email })
-        if (!user) return res.status(400).json({ message: "User not found or already confirmed" });
+        if (!user) throw new badRequestException("User not found or already confirmed");
 
         const confirmationOtp = user.OTPS?.find((otp) => otp.otpType === otpTypesEnum.CONFIRMATION);
         if (!confirmationOtp) {
-            return res.status(400).json({ message: "No confirmation OTP found" });
+            throw new badRequestException("No confirmation OTP found");
         }
         if (user.isVerified) {
-            return res.status(400).json({ message: "User already confirmed" });
+            throw new badRequestException("User already confirmed");
         }
 
         const isOtpMatch = compareHash(otp, confirmationOtp.value)
-        if (!isOtpMatch) return res.status(400).json({ message: "Invalid OTP" });
+        if (!isOtpMatch) throw new badRequestException("Invalid OTP");
 
         user.isVerified = true;
         user.OTPS = user.OTPS?.filter((otp) => otp.otpType !== otpTypesEnum.CONFIRMATION);
 
         await user.save();
-        return res.status(200).json({ message: "Email confirmed successfully" })
+        res.json(successResponse<IUser>('Email confirmed successfully', 200))
 
     }
     signIn = async (req: Request, res: Response) => {
         const { email, password } = req.body;
         const user: IUser | null = await this.userRepo.findOneDocument({ email })
-        if (!user) return res.status(400).json({ message: "User not found or already confirmed" });
+        if (!user) throw new badRequestException("User not found or already confirmed");
         if (!password || !user.password) {
-            return res.status(400).json({ message: "Password is required" });
+            throw new badRequestException("Password is required");
         };
 
         const isPasswordMatch = compareHash(password, user.password)
-        if (!isPasswordMatch) return res.status(401).json({ message: "Invalid email or password" })
+        if (!isPasswordMatch) throw new badRequestException("Invalid email or password")
 
         const accessToken = generateToken(
             {
@@ -99,13 +97,13 @@ class authService {
                 jwtid: uuidv4()
             }
         )
-        return res.status(200).json({ message: "User signed in successfully", data: { tokens: { accessToken, refreshToken } } })
+        res.json(successResponse("User signed in successfully", 200, { tokens: { accessToken, refreshToken } }))
     }
     logOut = async (req: IRequest, res: Response) => {
 
         const { token: { jti, exp } } = req.loggedInUser!
         const blackListedToken = await this.blackListedRepo.createNewDocument({ tokenId: jti, expiresAt: new Date(exp || Date.now() + 600000) })
-        return res.status(201).json({ message: "User logged out successfully", data: { blackListedToken } })
+        res.json(successResponse("User logged out successfully", 201, { blackListedToken }))
 
     }
 
