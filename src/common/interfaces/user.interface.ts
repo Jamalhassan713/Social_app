@@ -1,5 +1,5 @@
-import { Document } from "mongoose";
-import { genderEnum, otpTypesEnum, providerEnum, roleEnum } from "..";
+import { Document, Types } from "mongoose";
+import { conversationEnum, friendShipStatusEnum, genderEnum, otpTypesEnum, providerEnum, roleEnum } from "..";
 import { JwtPayload } from "jsonwebtoken";
 import { Request } from "express";
 
@@ -9,7 +9,7 @@ interface IOtp {
     otpType: otpTypesEnum
 }
 
-interface IUser extends Document {
+interface IUser extends Document<Types.ObjectId> {
     firstName: string,
     lastName: string,
     email: string,
@@ -27,7 +27,7 @@ interface IUser extends Document {
     OTPS?: IOtp[]
 }
 
-interface IBlackListedTokens extends Document {
+interface IBlackListedTokens extends Document<Types.ObjectId> {
     tokenId: string,
     expiresAt: Date
 }
@@ -45,5 +45,20 @@ interface IRequest extends Request {
     loggedInUser?: { user: IUser, token: JwtPayload }
 
 }
-
-export type { IUser, IEmailArgument, IBlackListedTokens, IRequest }
+interface IFriendShip extends Document<Types.ObjectId> {
+    requestFromId: Types.ObjectId;
+    requestToId: Types.ObjectId;
+    status: friendShipStatusEnum
+}
+interface IConversation extends Document<Types.ObjectId> {
+    type: conversationEnum | string,
+    name?: string,
+    members: Types.ObjectId[]
+}
+interface IMessage extends Document<Types.ObjectId> {
+    text?: string,
+    conversationId: Types.ObjectId,
+    senderId: Types.ObjectId,
+    attachments?: string[]
+}
+export type { IUser, IEmailArgument, IBlackListedTokens, IRequest, IFriendShip, IConversation, IMessage }

@@ -21,4 +21,19 @@ profileController.post('/cover-profile', authentication, hostUpload().single('pr
 //list all users
 profileController.get('/list-users', profileService.listAllUser)
 
+//send friend ship
+profileController.post('/send-request', authentication, profileService.sendFriendRequest)
+
+//list friend request
+profileController.get('/friend-requests', authentication, profileService.listRequests)
+
+//respond to friend request
+profileController.patch('/respond-to-friend-request', authentication, profileService.respondToFriendShipRequest)
+
+//create group
+profileController.post('/create-group', authentication, profileService.createGroup)
+
+
+
+
 export { profileController }

@@ -1,4 +1,4 @@
-import mongoose, { FilterQuery, Model, ProjectionType, QueryOptions, UpdateQuery } from "mongoose";
+import mongoose, { FilterQuery, Model, ProjectionType, QueryOptions, Types, UpdateQuery } from "mongoose";
 
 
 export abstract class baseRepository<T> {
@@ -10,10 +10,10 @@ export abstract class baseRepository<T> {
     async findOneDocument(filters: FilterQuery<T>, projection?: ProjectionType<T>, options?: QueryOptions<T>): Promise<T | null> {
         return await this.model.findOne(filters, projection, options)
     }
-    async findDocumentById(id: mongoose.Schema.Types.ObjectId, projection?: ProjectionType<T>, options?: QueryOptions<T>): Promise<T | null> {
+    async findDocumentById(id: string | Types.ObjectId, projection?: ProjectionType<T>, options?: QueryOptions<T>): Promise<T | null> {
         return await this.model.findById(id, projection, options)
     }
-    async findDocumentByIdAndUpdate(id: mongoose.Schema.Types.ObjectId, updatedObject: UpdateQuery<T>, options?: QueryOptions<T>): Promise<T | null> {
+    async findDocumentByIdAndUpdate(id: string | Types.ObjectId, updatedObject: UpdateQuery<T>, options?: QueryOptions<T>): Promise<T | null> {
         return await this.model.findById(id, updatedObject, options)
     }
     async updateOneDocument(filters: FilterQuery<T>, updatedObject: UpdateQuery<T>, options?: QueryOptions<T>) {
@@ -24,7 +24,7 @@ export abstract class baseRepository<T> {
     deleteOneDocument() { }
     deleteMultipleDocument() { }
     findAndDeleteDocument() { }
-    async findDocuments(filters: FilterQuery<T> = {}, projection?: ProjectionType<T>, options?: QueryOptions<T>): Promise<T[]> {
+    async findDocuments(filters: FilterQuery<T> = {}, projection?: ProjectionType<T>, options?: QueryOptions<T>): Promise<T[] | []> {
         return await this.model.find(filters, projection, options)
     }
 }

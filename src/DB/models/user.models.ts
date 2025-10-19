@@ -47,7 +47,7 @@ const userSchema = new mongoose.Schema<IUser>({
         public_id: String
     },
     coverPicture: {
-        url: String,
+        secure_url: String,
         public_id: String
     },
     provider: {
