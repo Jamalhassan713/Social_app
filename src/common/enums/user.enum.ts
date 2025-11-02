@@ -13,7 +13,9 @@ enum providerEnum {
 }
 enum otpTypesEnum {
     CONFIRMATION = 'confirmation',
-    RESET_PASSWORD = 'reset_password'
+    RESET_PASSWORD = 'reset_password',
+    UPDATE_EMAIL = 'update email',
+    TWO_FACTOR_AUTH = 'two factor auth'
 }
 enum friendShipStatusEnum {
     PENDING = 'pending',
@@ -24,5 +26,13 @@ enum conversationEnum {
     DIRECT = 'direct',
     GROUP = 'group'
 }
+enum reactEnum {
+    LIKE = '👍',
+    LOVE = '❤️',
+    HAHA = '😂',
+    WOW = '😮',
+    SAD = '😢',
+    ANGRY = '😡'
+}
 
-export { roleEnum, genderEnum, providerEnum, otpTypesEnum, friendShipStatusEnum, conversationEnum }
+export { roleEnum, genderEnum, providerEnum, otpTypesEnum, friendShipStatusEnum, conversationEnum, reactEnum }

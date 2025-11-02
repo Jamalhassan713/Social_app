@@ -14,16 +14,32 @@ export abstract class baseRepository<T> {
         return await this.model.findById(id, projection, options)
     }
     async findDocumentByIdAndUpdate(id: string | Types.ObjectId, updatedObject: UpdateQuery<T>, options?: QueryOptions<T>): Promise<T | null> {
-        return await this.model.findById(id, updatedObject, options)
+        return await this.model.findByIdAndUpdate(id, updatedObject, options)
     }
     async updateOneDocument(filters: FilterQuery<T>, updatedObject: UpdateQuery<T>, options?: QueryOptions<T>) {
         return await this.model.findOneAndUpdate(filters, updatedObject, options)
     }
-    updateMultipleDocument() { }
-    findAndUpdateDocument() { }
-    deleteOneDocument() { }
-    deleteMultipleDocument() { }
-    findAndDeleteDocument() { }
+    // updateMultipleDocument() { }
+    // findAndUpdateDocument() { }
+    // deleteOneDocument() { }
+    // deleteMultipleDocument() { }
+    // findAndDeleteDocument() { }
+    async updateMultipleDocument(filters: FilterQuery<T>, updatedObject: UpdateQuery<T>) {
+        return await this.model.updateMany(filters, updatedObject);
+    }
+
+    async deleteOneDocument(filters: FilterQuery<T>) {
+        return await this.model.deleteOne(filters);
+    }
+
+    async deleteMultipleDocument(filters: FilterQuery<T>) {
+        return await this.model.deleteMany(filters);
+    }
+
+    async findAndDeleteDocument(filters: FilterQuery<T>) {
+        return await this.model.findOneAndDelete(filters);
+    }
+
     async findDocuments(filters: FilterQuery<T> = {}, projection?: ProjectionType<T>, options?: QueryOptions<T>): Promise<T[] | []> {
         return await this.model.find(filters, projection, options)
     }

@@ -66,7 +66,15 @@ const userSchema = new mongoose.Schema<IUser>({
         value: { type: String, required: true },
         expiredAt: { type: Date, default: () => Date.now() + 600000 },
         otpType: { type: String, enum: otpTypesEnum, required: true }
-    }]
+    }],
+    isTwoFactorEnabled: {
+        type: Boolean,
+        default: false
+    },
+    blockedUsers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
 
 }, { timestamps: true })
 

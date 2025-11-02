@@ -16,7 +16,9 @@ app.use('/comments', controllers.commentController)
 app.use('/reacts', controllers.reactController)
 
 app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+
     if (err) {
+        console.error("❌ Global Error Handler:", err);
         if (err instanceof httpException) {
             return res.status(err.statusCode).json(failedResponse(err.message, err.statusCode, err.error))
         } else {

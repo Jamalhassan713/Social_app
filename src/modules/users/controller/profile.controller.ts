@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { authentication, hostUpload } from "../../../middlewares";
+import { authentication, hostUpload, validationMiddleware } from "../../../middlewares";
 import profileService from "../services/profile.service";
+import { updateEmailOtpValidator, updatePasswordValidator, updateProfileValidator } from "../../../validators";
 const profileController = Router();
 
 //update profile
-profileController.put('/update-profile', authentication, profileService.updateProfile)
+profileController.put('/update-profile', authentication, validationMiddleware(updateProfileValidator), profileService.updateProfile)
 
 //delete profile 
 profileController.delete('/delete-profile', authentication, profileService.deleteAccount)
@@ -33,7 +34,15 @@ profileController.patch('/respond-to-friend-request', authentication, profileSer
 //create group
 profileController.post('/create-group', authentication, profileService.createGroup)
 
+//update email
+profileController.put('/update-email', authentication, validationMiddleware(updateEmailOtpValidator), profileService.updateSendEmailOtp);
 
+//update password
+profileController.put('/update-password', authentication, validationMiddleware(updatePasswordValidator), profileService.updatePassword)
 
+//delete friend request
+profileController.post('/delete-request', authentication, profileService.deleteFriendRequest)
 
+//unfriend
+profileController.post('/unfriend', authentication, profileService.unfriend)
 export { profileController }

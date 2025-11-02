@@ -24,7 +24,9 @@ interface IUser extends Document<Types.ObjectId> {
     googleId?: string,
     phoneNumber?: string,
     isVerified?: boolean,
-    OTPS?: IOtp[]
+    OTPS?: IOtp[],
+    isTwoFactorEnabled: boolean,
+    blockedUsers?:Types.ObjectId[]
 }
 
 interface IBlackListedTokens extends Document<Types.ObjectId> {

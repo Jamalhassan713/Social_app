@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
-import { conversationEnum, friendShipStatusEnum, IFriendShip, IRequest, IUser } from "../../../common";
+import { conversationEnum, friendShipStatusEnum, IFriendShip, IRequest, IUser, otpTypesEnum } from "../../../common";
 import { conversationRepository, friendShipRepository, userModel, userRepository } from "../../../DB";
-import { deleteFileFromCloudinary, badRequestException, successResponse, uploadFileOneCloudinary, encrypt, generateHash } from "../../../utils";
+import { deleteFileFromCloudinary, badRequestException, successResponse, uploadFileOneCloudinary, encrypt, generateHash, emitter, compareHash } from "../../../utils";
 import mongoose, { FilterQuery } from "mongoose";
+import { email } from "zod";
 
 class profileService {
     private userRepo: userRepository = new userRepository(userModel)
@@ -55,17 +56,15 @@ class profileService {
     }
     updateProfile = async (req: IRequest, res: Response) => {
         const { user: { _id } } = req.loggedInUser!
-        const { firstName, lastName, email, password, age, gender, DOB, phoneNumber }: IUser = req.body;
+        const { firstName, lastName, age, gender, DOB, phoneNumber }: IUser = req.body;
 
         const updateFields: Partial<IUser> = {};
 
         if (firstName) updateFields.firstName = firstName;
         if (lastName) updateFields.lastName = lastName;
-        if (email) updateFields.email = email;
         if (age) updateFields.age = age;
         if (gender) updateFields.gender = gender;
         if (DOB) updateFields.DOB = DOB;
-        if (password) updateFields.password = generateHash(password);
         if (phoneNumber) updateFields.phoneNumber = encrypt(phoneNumber);
 
         const updateUser = await this.userRepo.updateOneDocument(
@@ -158,8 +157,84 @@ class profileService {
             members: [_id, ...memberIds]
         })
         res.json(successResponse('Group created successfully', 200, group))
-
     }
+    updateSendEmailOtp = async (req: IRequest, res: Response) => {
+        const { user } = req.loggedInUser!
+        const { newEmail } = req.body;
+        const existingUser = await this.userRepo.findOneDocument({ email: newEmail });
+        if (existingUser) throw new badRequestException('This email is already used by another user');
+
+        const otp = Math.floor(Math.random() * 100000).toString();
+        const emailOtp = {
+            value: generateHash(otp),
+            expiredAt: Date.now() + 600000,
+            otpType: otpTypesEnum.UPDATE_EMAIL
+        };
+
+        user.OTPS = user.OTPS || []
+        user.OTPS.push(emailOtp);
+        await user.save();
+        emitter.emit('sendEmail', {
+            to: newEmail,
+            subject: 'OTP to confirm your new email',
+            content: `Your OTP is ${otp}`
+        })
+
+        res.json(successResponse('Otp sent to your new email', 200))
+    }
+    updatePassword = async (req: IRequest, res: Response) => {
+        const { user } = req.loggedInUser!
+        const { oldPassword, newPassword } = req.body;
+        if (!oldPassword || !newPassword) throw new badRequestException('Old and new password are required');
+
+        const existingUser = await this.userRepo.findDocumentById(user._id);
+        if (!existingUser) throw new badRequestException('User not found');
+
+        const isMatch = compareHash(oldPassword, existingUser.password);
+        if (!isMatch) throw new badRequestException('Incorrect password');
+        existingUser.password = newPassword
+        await existingUser.save()
+        res.json(successResponse('Password updated successfully', 200))
+    }
+    deleteFriendRequest = async (req: IRequest, res: Response) => {
+        const { user: { _id } } = req.loggedInUser!
+        const { friendRequestId } = req.body;
+        if (!friendRequestId) throw new badRequestException('Friend request ID is required');
+        const friendRequest = await this.friendShipRepo.findOneDocument({
+            _id: friendRequestId,
+            $or: [
+                { requestFromId: _id },
+                { requestToId: _id }
+            ]
+        });
+        if (!friendRequest) throw new badRequestException("Friend request not found or you're not allowed to delete it");
+
+        await friendRequest.deleteOne();
+
+        res.json(successResponse("Friend request deleted successfully", 200));
+    }
+    unfriend = async (req: IRequest, res: Response) => {
+        const { user: { _id } } = req.loggedInUser!;
+        const { friendId } = req.body;
+
+        if (!friendId) throw new badRequestException("Friend ID is required");
+
+        const existingFriendShip = await this.friendShipRepo.findOneDocument({
+            status: friendShipStatusEnum.ACCEPTED,
+            $or: [
+                { requestFromId: _id, requestToId: friendId },
+                { requestFromId: friendId, requestToId: _id }
+            ]
+        });
+
+        if (!existingFriendShip)
+            throw new badRequestException("Friendship not found or already removed");
+
+        await existingFriendShip.deleteOne();
+
+        res.json(successResponse("Unfriended successfully", 200));
+    }
+
 }
 
 export default new profileService();

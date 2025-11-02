@@ -15,4 +15,19 @@ export class chatEvents {
             this.chatServices.getConversationMessage(this.socket, data)
         })
     }
+    userStatusEvents() {
+        this.socket.broadcast.emit("user-online", { userId: this.socket.data.userId });
+        this.socket.on("disconnect", () => {
+            this.socket.broadcast.emit("user-offline", { userId: this.socket.data.userId });
+        });
+    }
+    typingEvents() {
+        this.socket.on("start-typing", ({ targetUserId }) => {
+            this.socket.to(targetUserId).emit("user-typing", { userId: this.socket.data.userId, typing: true });
+        });
+        this.socket.on("stop-typing", ({ targetUserId }) => {
+            this.socket.to(targetUserId).emit("user-typing", { userId: this.socket.data.userId, typing: false });
+        });
+    }
+
 }
