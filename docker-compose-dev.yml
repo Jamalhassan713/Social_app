@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      target: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src:ro
+    command: npm run dev
+
+  mongodb:
+    ports:
+      - "27017:27017"
